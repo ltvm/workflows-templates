@@ -5,6 +5,9 @@ on:
       IMAGE_REPOSITORY:
         required: true
         type: string
+    secrets:
+      GCR_CREDENTIALS:
+        required: true
 
 env:
   IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
@@ -22,6 +25,7 @@ jobs:
 
   docker:
     runs-on: ["self-hosted"]
+    needs: ["golangci-lint"]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
@@ -75,4 +79,3 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
