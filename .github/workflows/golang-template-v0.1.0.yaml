@@ -29,7 +29,7 @@ jobs:
   docker:
     runs-on: ["self-hosted"]
     needs: ["golangci-lint"]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
 
@@ -37,15 +37,25 @@ jobs:
         id: before_script
         run: |
           #!/bin/bash
-          printenv
+
           if [[ "$IMAGE_REPOSITORY" == "" ]]; then
             echo "IMAGE_REPOSITORY must be define."
-            echo "IMAGE_REPOSITORY: ${IMAGE_REPOSITORY}"
-            printenv
             exit 1
           fi
-          TAG_PREFIX=${TAG_PREFIX:-m}
-          IMAGE_TAG=${TAG_PREFIX}-$(echo ${GITHUB_SHA::7})
+
+          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})
+          IMAGE_TAG=""
+
+          if [[ "${BRANCH_NAME}" == "main" ]]; then
+            IMAGE_TAG=${BRANCH_NAME}-$(echo ${GITHUB_SHA::7})
+          elif [[ "${BRANCH_NAME}" == release-* ]]; then
+            IMAGE_TAG=${BRANCH_NAME}
+          else
+            echo "Docker build only happens in branch 'main' or 'release-*'. Exit 1."
+            exit 1
+          fi
+
+          echo "::set-output name=BRANCH_NAME::${BRANCH_NAME}"
           echo "::set-output name=IMAGE_URL::${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 
       - name: Set up Docker Buildx
