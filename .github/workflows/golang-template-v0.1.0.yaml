@@ -29,7 +29,7 @@ jobs:
   docker:
     runs-on: ["self-hosted"]
     needs: ["golangci-lint"]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
 
@@ -51,8 +51,8 @@ jobs:
           elif [[ "${BRANCH_NAME}" == release-* ]]; then
             IMAGE_TAG=${BRANCH_NAME}
           else
-            echo "Docker build only happens in branch 'main' or 'release-*'. Exit 1."
-            exit 1
+            echo "Docker build only happens in branch 'main' or 'release-*'"
+            exit 0
           fi
 
           echo "::set-output name=BRANCH_NAME::${BRANCH_NAME}"
