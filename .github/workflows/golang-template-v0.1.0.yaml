@@ -15,7 +15,7 @@ env:
 jobs:
   golangci-lint:
     runs-on: ["self-hosted"]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/setup-go@v3
         with:
