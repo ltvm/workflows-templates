@@ -75,7 +75,7 @@ jobs:
           if [[ "${BRANCH_NAME}" == "main" ]]; then
             IMAGE_TAG=${BRANCH_NAME}-$(echo ${GITHUB_SHA::7})
           elif [[ "${BRANCH_NAME}" == release-* ]]; then
-            IMAGE_TAG=${BRANCH_NAME}
+            IMAGE_TAG=${BRANCH_NAME}.${GITHUB_RUN_NUMBER}
           else
             echo "Docker build only happens in branch 'main' or 'release-*'"
             exit 0
