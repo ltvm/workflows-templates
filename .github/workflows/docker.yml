@@ -1,25 +1,96 @@
-name: GitHub Actions Demo
+name: Docker only
 on:
   workflow_call:
+    inputs:
+      IMAGE_REPOSITORY:
+        required: true
+        type: string
+    secrets:
+      GCR_CREDENTIALS:
+        required: true
+
+env:
+  IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
 
 jobs:
-  Explore-GitHub-Actions:
-    runs-on: ubuntu-latest
+  trivy:
+    runs-on: ["self-hosted"]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - uses: actions/checkout@v3
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          vuln-type: 'library'
+          security-checks: 'secret,config'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
 
-  Stage-number-2:
-    runs-on: ubuntu-latest
-    needs: [Explore-GitHub-Actions]
+  docker:
+    runs-on: ["self-hosted"]
+    needs: ["trivy"]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
     steps:
-      - run: echo "At this step, I should build container images with docker, or something else"
+      - uses: actions/checkout@v3
+
+      - name: prepare
+        id: before_script
+        run: |
+          #!/bin/bash
+
+          if [[ "$IMAGE_REPOSITORY" == "" ]]; then
+            echo "IMAGE_REPOSITORY must be define."
+            exit 1
+          fi
+
+          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})
+          IMAGE_TAG=""
+
+          if [[ "${BRANCH_NAME}" == "main" ]]; then
+            IMAGE_TAG=${BRANCH_NAME}-$(echo ${GITHUB_SHA::7})
+          elif [[ "${BRANCH_NAME}" == release-* ]]; then
+            IMAGE_TAG=${BRANCH_NAME}.${GITHUB_RUN_NUMBER}
+          else
+            echo "Docker build only happens in branch 'main' or 'release-*'"
+            exit 0
+          fi
+
+          echo "::set-output name=BRANCH_NAME::${BRANCH_NAME}"
+          echo "::set-output name=IMAGE_URL::${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Gcloud Auth
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: '${{ secrets.GCR_CREDENTIALS }}'
+
+      - name: Setup Gcloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+
+      - name: Configure docker
+        run: gcloud auth configure-docker
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-${{ env.SERVICE }}-buildx
+
+      - name: Docker build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.before_script.outputs.IMAGE_URL }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      - name: Move Docker cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
