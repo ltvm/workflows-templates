@@ -18,22 +18,21 @@ jobs:
   security_scan:
     runs-on: ["self-hosted"]
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
+    container: ghcr.io/zricethezav/gitleaks:latest
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Run Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      - name: Run Trivy vulnerability scanner in fs mode
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          vuln-type: 'library'
-          security-checks: 'vuln,config'
-          severity: 'HIGH,CRITICAL'
+        run: gitleaks detect -v -s .
+      # - name: Run Trivy vulnerability scanner in fs mode
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     scan-type: 'fs'
+      #     scan-ref: '.'
+      #     vuln-type: 'library'
+      #     security-checks: 'vuln,config'
+      #     severity: 'HIGH,CRITICAL'
 
   docker:
     runs-on: ["self-hosted"]
