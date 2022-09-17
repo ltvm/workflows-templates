@@ -15,28 +15,36 @@ env:
   IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
 
 jobs:
-  security_scan:
+  gitleaks:
     runs-on: ["self-hosted"]
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
-    container: ghcr.io/zricethezav/gitleaks:latest
+    container: asia.gcr.io/kyber-operation/base/gitleaks:0.1.0
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Run Gitleaks scan
         run: gitleaks detect -v -s .
-      # - name: Run Trivy vulnerability scanner in fs mode
-      #   uses: aquasecurity/trivy-action@master
-      #   with:
-      #     scan-type: 'fs'
-      #     scan-ref: '.'
-      #     vuln-type: 'library'
-      #     security-checks: 'vuln,config'
-      #     severity: 'HIGH,CRITICAL'
+  
+  fs_scan:
+    runs-on: ["self-hosted"]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          vuln-type: 'library'
+          security-checks: 'vuln,config'
+          severity: 'HIGH,CRITICAL'
 
   docker:
     runs-on: ["self-hosted"]
-    needs: ["security_scan"]
+    needs: ["gitleaks", "fs_scan"]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
