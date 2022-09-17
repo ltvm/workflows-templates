@@ -48,6 +48,7 @@ jobs:
           vuln-type: 'library'
           security-checks: 'vuln,config'
           severity: 'HIGH,CRITICAL'
+          exit-code: '1'
 
   docker:
     runs-on: ["self-hosted"]
