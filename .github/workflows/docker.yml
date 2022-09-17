@@ -1,4 +1,4 @@
-name: Docker only
+name: Container
 on:
   workflow_call:
     inputs:
@@ -8,29 +8,36 @@ on:
     secrets:
       GCR_CREDENTIALS:
         required: true
+      GH_PAT:
+        required: false
 
 env:
   IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
 
 jobs:
-  trivy:
+  security_scan:
     runs-on: ["self-hosted"]
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       - name: Run Trivy vulnerability scanner in fs mode
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
           vuln-type: 'library'
-          security-checks: 'secret,config'
-          exit-code: '0'
+          security-checks: 'vuln,config'
           severity: 'HIGH,CRITICAL'
 
   docker:
     runs-on: ["self-hosted"]
-    needs: ["trivy"]
+    needs: ["security_scan"]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
@@ -94,3 +101,17 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  trivy:
+    needs: ["docker"]
+    runs-on: ["self-hosted"]
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Trivy vulnerability scanner in image mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: ${{ steps.before_script.outputs.IMAGE_URL }}
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
