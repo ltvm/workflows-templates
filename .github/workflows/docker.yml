@@ -5,6 +5,9 @@ on:
       IMAGE_REPOSITORY:
         required: true
         type: string
+      GCR_USERNAME:
+        required: true
+        type: string
     secrets:
       GCR_CREDENTIALS:
         required: true
@@ -18,7 +21,11 @@ jobs:
   gitleaks:
     runs-on: ["self-hosted"]
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
-    container: asia.gcr.io/kyber-operation/base/gitleaks:0.1.0
+    container:
+      image: asia.gcr.io/kyber-operation/base/gitleaks:0.1.0
+      credentials:
+        username: ${{ inputs.GCR_USERNAME }}
+        password: ${{ secrets.GCR_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v3
         with:
