@@ -5,14 +5,11 @@ on:
       IMAGE_REPOSITORY:
         required: true
         type: string
-      GCR_USERNAME:
-        required: true
-        type: string
-    secrets:
-      GCR_CREDENTIALS:
-        required: true
-      GCR_USERNAME:
-        required: true
+    # secrets:
+    #   GCR_CREDENTIALS:
+    #     required: true
+    #   GCR_USERNAME:
+    #     required: true
 
 env:
   IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
