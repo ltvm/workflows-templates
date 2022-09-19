@@ -11,8 +11,8 @@ on:
     secrets:
       GCR_CREDENTIALS:
         required: true
-      GH_PAT:
-        required: false
+      GCR_USERNAME:
+        required: true
 
 env:
   IMAGE_REPOSITORY: ${{ inputs.IMAGE_REPOSITORY }}
@@ -23,9 +23,9 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
     container:
       image: asia.gcr.io/kyber-operation/base/gitleaks:0.1.0
-      credentials:
-        username: ${{ inputs.GCR_USERNAME }}
-        password: ${{ secrets.GCR_CREDENTIALS }}
+      # credentials:
+      #   username: ${{ secrets.GCR_USERNAME }}
+      #   password: ${{ secrets.GCR_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v3
         with:
