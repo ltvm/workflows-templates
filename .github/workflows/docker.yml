@@ -47,6 +47,7 @@ jobs:
           security-checks: 'vuln,config'
           severity: 'HIGH,CRITICAL'
           exit-code: '1'
+          ignore-unfixed: true
 
   docker:
     runs-on: ["self-hosted"]
@@ -128,3 +129,4 @@ jobs:
           image-ref: ${{ steps.before_script.outputs.IMAGE_URL }}
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
