@@ -5,9 +5,9 @@ on:
       IMAGE_REPOSITORY:
         required: true
         type: string
-    # secrets:
-    #   GCR_CREDENTIALS:
-    #     required: true
+    secrets:
+      GCR_CREDENTIALS:
+        required: true
     #   GCR_USERNAME:
     #     required: true
 
