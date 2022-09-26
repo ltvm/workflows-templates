@@ -51,7 +51,7 @@ jobs:
 
   docker:
     runs-on: ["self-hosted"]
-    needs: ["gitleaks", "fs_scan"]
+    needs: ["gitleaks"]
     steps:
       - uses: actions/checkout@v3
 
