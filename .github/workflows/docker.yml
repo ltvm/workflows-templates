@@ -15,7 +15,7 @@ env:
 jobs:
   trivy:
     runs-on: ["self-hosted"]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
       - name: Run Trivy vulnerability scanner in fs mode
@@ -31,7 +31,7 @@ jobs:
   docker:
     runs-on: ["self-hosted"]
     needs: ["trivy"]
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release')
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release')
     steps:
       - uses: actions/checkout@v3
 
