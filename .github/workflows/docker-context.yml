@@ -42,7 +42,7 @@ jobs:
   docker:
     runs-on: ["self-hosted"]
     needs: ["trivy"]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release')
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release') || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
 
